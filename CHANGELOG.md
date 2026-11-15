@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-15
+
 ### Added
 
 - A linkding device: server online, bookmarks, unread and archived bookmarks,
@@ -27,4 +29,5 @@ the notes of the version's GitHub Release.
 - **Test the connection**; texts and documentation in English, French, German
   and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-linkding/commits/main
+[Unreleased]: https://github.com/guim31/gladys-linkding/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-linkding/releases/tag/v1.0.0
