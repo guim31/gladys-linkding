@@ -174,7 +174,10 @@ test('addresses: default port, proxy path, pasted suffixes, credentials refused'
   assert.equal(normalizeUrl('192.0.2.10:9091'), 'http://192.0.2.10:9091');
   assert.equal(normalizeUrl('https://example.org/linkding/'), 'https://example.org/linkding');
   assert.equal(normalizeUrl('https://example.org/linkding/api/'), 'https://example.org/linkding');
-  assert.equal(normalizeUrl('http://192.0.2.10:9090/bookmarks'), 'http://192.0.2.10:9090');
+  assert.equal(
+    normalizeUrl('http://192.0.2.10:9090/bookmarks'),
+    'http://192.0.2.10:9090/bookmarks',
+  );
   assert.equal(normalizeUrl('https://user:pw@example.org'), null);
   assert.equal(normalizeUrl('ftp://example.org'), null);
   assert.equal(normalizeUrl('   '), null);

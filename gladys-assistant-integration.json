@@ -109,7 +109,13 @@
         "es": "p. ej. leer"
       },
       "required": false,
-      "default": ""
+      "default": "",
+      "description": {
+        "en": "One tag, without # nor spaces, as in linkding.",
+        "fr": "Une étiquette, sans # ni espace, comme dans linkding.",
+        "de": "Ein Tag, ohne # und ohne Leerzeichen, wie in linkding.",
+        "es": "Una etiqueta, sin # ni espacios, como en linkding."
+      }
     },
     {
       "key": "search",
@@ -366,7 +372,7 @@
         "de": "Speichert eine Webadresse, auf Wunsch mit Tags und als ungelesen. Schalte es zuerst in der Konfiguration ein.",
         "es": "Guarda una dirección web, con etiquetas y como no leída si lo desea. Actívelo primero en la configuración."
       },
-      "timeout_seconds": 30,
+      "timeout_seconds": 60,
       "fields": [
         {
           "key": "url",

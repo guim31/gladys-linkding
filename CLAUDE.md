@@ -104,6 +104,11 @@ URL."] }`, unknown route: HTML 404.
   `?disable_scraping`.
 - Ids grow; imports (Netscape HTML) keep their old `date_added`: the trigger
   ignores bookmarks older than a day, and the ones saved by the integration.
+- The trigger baseline is keyed by address and filters (a filter change is a
+  silent baseline) and pauses while a save is in flight, so a bookmark saved
+  by the integration is never announced, even before its id is known.
+- `add_bookmark` runs `check` then `POST`, each up to 15 s (both fetch the
+  page): `timeout_seconds` is 60. A timeout on `check` means nothing was sent.
 - The device id is `linkding:server`, independent of the address: one
   integration, one linkding.
 - Testing with Docker: `sissbruecker/linkding` (port 9090, SQLite, no other

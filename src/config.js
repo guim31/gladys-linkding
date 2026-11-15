@@ -27,7 +27,8 @@ export const DEFAULT_CONFIG = {
  * - `192.0.2.10:9091`: that port;
  * - `https://example.org/linkding/`: exactly that address (reverse proxy,
  *   LD_CONTEXT_PATH).
- * A pasted `/api` or `/bookmarks` suffix is dropped. Null when not usable.
+ * A pasted `/api` suffix is dropped (not `/bookmarks`: it may be the context
+ * path). Null when not usable.
  * @param {unknown} raw
  * @returns {string | null}
  */
@@ -58,7 +59,7 @@ export function normalizeUrl(raw) {
   }
   const path = url.pathname
     .replace(/\/+$/, '')
-    .replace(/\/(api|bookmarks)$/i, '')
+    .replace(/\/api$/i, '')
     .replace(/\/+$/, '');
   return `${url.protocol}//${url.host}${path}`;
 }

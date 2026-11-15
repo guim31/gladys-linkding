@@ -183,7 +183,7 @@ test('the last bookmark seen survives a restart', async (t) => {
   const server = createLinkding();
   const first = await createWorld({ server, store });
   await first.app.stop();
-  assert.equal(store.data.server, HOST);
+  assert.equal(store.data.key, JSON.stringify([HOST, '']));
   assert.equal(store.data.lastId, 4);
   server.addBookmark({ title: 'While stopped', url: 'https://example.org/w' });
   const second = await createWorld({ server, store });
@@ -417,4 +417,30 @@ test('an error answer during a read is not called "does not answer"', async (t) 
   world.hub.client.fetch = async () => new Response('{"detail":"boom"}', { status: 500 });
   await world.hub.refresh();
   assert.match(world.fake.connectionStatus.message.en, /answered with an error/);
+});
+
+test('a filter change is a new silent baseline', async (t) => {
+  const world = await createWorld({ config: { url: HOST, api_token: TOKEN, tag: 'cooking' } });
+  t.after(() => world.app.stop());
+  // Added while filtered out: it only starts matching when the filter goes.
+  world.server.addBookmark({ title: 'Untagged', url: 'https://example.org/u' });
+  await world.hub.refresh();
+  await world.fake.configUpdated({ url: HOST, api_token: TOKEN });
+  await settle(20);
+  assert.equal(events(world.fake).length, 0);
+  world.server.addBookmark({ title: 'Really new', url: 'https://example.org/n' });
+  await world.hub.refresh();
+  assert.deepEqual(
+    events(world.fake).map((e) => e.data.title),
+    ['Really new'],
+  );
+});
+
+test('add_bookmark: a check that times out says nothing was saved', async (t) => {
+  const world = await createWorld({ config: { ...ALLOW, language: 'en' } });
+  t.after(() => world.app.stop());
+  world.server.state.slow = true;
+  const ack = await world.fake.sceneAction('add_bookmark', { url: 'https://example.org/slow' });
+  assert.match(ack.error, /nothing was done/);
+  assert.ok(!world.server.state.requests.some((r) => r.startsWith('POST')));
 });

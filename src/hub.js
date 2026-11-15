@@ -87,7 +87,7 @@ export class Hub {
     this.failure = null;
     this.announced = false;
     this.lastStatus = '';
-    /** what the trigger already saw: { server, lastId } */
+    /** what the trigger already saw: { key: [url, filters], lastId } */
     this.seen = null;
     this.own = new Set();
     /** bookmark id -> reads at which Gladys refused its event */
@@ -102,6 +102,7 @@ export class Hub {
     this.widgetRefreshAt = 0;
     this.widgetTimer = null;
     this.stopped = false;
+    this.saving = 0;
   }
 
   get language() {
@@ -120,8 +121,8 @@ export class Hub {
     const saved = await this.store.load();
     // A damaged file is a new baseline, not a crash on every read.
     this.seen =
-      typeof saved.server === 'string' && Number.isInteger(saved.lastId) && saved.lastId >= 0
-        ? { server: saved.server, lastId: saved.lastId }
+      typeof saved.key === 'string' && Number.isInteger(saved.lastId) && saved.lastId >= 0
+        ? { key: saved.key, lastId: saved.lastId }
         : null;
     // The bookmarks saved from Gladys but not read back yet: never announced,
     // even after a restart.
@@ -300,13 +301,19 @@ export class Hub {
   /**
    * Fire the bookmarks added since the last read, the oldest first. The first
    * read of a linkding server is a silent baseline: installing the
-   * integration announces nothing already there. Bookmark ids only grow, so
-   * the highest id seen is all there is to remember.
+   * integration announces nothing already there, and so is the first read
+   * after a filter change (a bookmark that only starts matching is not new).
+   * Bookmark ids only grow, so the highest id seen is all there is to remember.
    * @param {object[]} bookmarks the newest bookmarks of the filters, summarized
    */
   async #announce(bookmarks) {
-    const server = this.config.url;
-    const known = this.seen?.server === server ? this.seen : null;
+    if (this.saving > 0) {
+      // A save in flight: its bookmark may be in this read before its id is
+      // known. The next read announces what is new.
+      return;
+    }
+    const key = JSON.stringify([this.config.url, this.config.query]);
+    const known = this.seen?.key === key ? this.seen : null;
     const newest = bookmarks.reduce((max, b) => Math.max(max, b.id), known?.lastId ?? 0);
     let lastId = newest;
     if (known) {
@@ -360,7 +367,7 @@ export class Hub {
         this.own.delete(id);
       }
     }
-    const next = { server, lastId, own: [...this.own] };
+    const next = { key, lastId, own: [...this.own] };
     if (JSON.stringify(next) !== JSON.stringify(this.seen)) {
       this.seen = next;
       await this.store.save(next);
@@ -604,25 +611,35 @@ export class Hub {
     const cleanTitle = typeof title === 'string' ? title.replace(/\s+/g, ' ').trim() : '';
     let existing;
     let created;
+    this.saving += 1;
     try {
-      existing = await client.existing(link);
-      if (!existing) {
-        created = await client.create({
-          url: link,
-          title: cleanTitle.slice(0, 512),
-          tags: tagNames,
-          unread: unread === true || unread === 'true',
-        });
+      try {
+        existing = await client.existing(link);
+      } catch (err) {
+        // Nothing was sent yet: a timeout here saved nothing.
+        throw this.#commandError(err, 'read');
       }
-    } catch (err) {
-      throw this.#commandError(err, 'http');
+      if (!existing) {
+        try {
+          created = await client.create({
+            url: link,
+            title: cleanTitle.slice(0, 512),
+            tags: tagNames,
+            unread: unread === true || unread === 'true',
+          });
+        } catch (err) {
+          throw this.#commandError(err, 'http');
+        }
+        this.#remember(created.id);
+      }
+    } finally {
+      this.saving -= 1;
     }
     if (existing) {
       logger.info('Bookmark already saved: left as it is');
       const summary = summarizeBookmark(existing);
       return { id: summary.id, title: summary.title, existed: true };
     }
-    this.#remember(created.id);
     const summary = summarizeBookmark(created);
     logger.info(`Bookmark saved${tagNames.length ? `, ${tagNames.length} tag(s)` : ''}`);
     // The counters and the widget follow without waiting for the timer.
