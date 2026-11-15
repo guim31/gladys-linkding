@@ -1,0 +1,8 @@
+{
+  "request": "GET /health",
+  "status": 200,
+  "body": {
+    "version": "1.47.0",
+    "status": "healthy"
+  }
+}

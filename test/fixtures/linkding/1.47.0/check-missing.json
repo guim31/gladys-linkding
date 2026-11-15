@@ -1,0 +1,14 @@
+{
+  "request": "GET /api/bookmarks/check/?url=https%3A%2F%2Fexample.org%2Fnew-page",
+  "status": 200,
+  "body": {
+    "bookmark": null,
+    "metadata": {
+      "url": "https://example.org/new-page",
+      "title": "Example Domain",
+      "description": null,
+      "preview_image": null
+    },
+    "auto_tags": []
+  }
+}

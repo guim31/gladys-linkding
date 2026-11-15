@@ -1,0 +1,7 @@
+{
+  "request": "POST /api/bookmarks/",
+  "status": 400,
+  "body": {
+    "url": ["Enter a valid URL."]
+  }
+}

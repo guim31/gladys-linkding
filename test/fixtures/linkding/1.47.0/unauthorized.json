@@ -1,0 +1,7 @@
+{
+  "request": "GET /api/user/profile/",
+  "status": 401,
+  "body": {
+    "detail": "Invalid token."
+  }
+}

@@ -1,177 +1,686 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "linkding",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Your linkding bookmarks in Gladys: counters, unread list, new bookmarks, bookmarks saved by scene.",
+    "fr": "Vos favoris linkding dans Gladys : compteurs, non lus, nouveaux favoris, favoris ajoutés par scène.",
+    "de": "Deine linkding-Lesezeichen in Gladys: Zähler, Ungelesene, neue Lesezeichen, Speichern per Szene.",
+    "es": "Sus marcadores linkding en Gladys: contadores, no leídos, nuevos marcadores, guardado por escena."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-linkding:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-linkding/main/cover.png",
+  "categories": ["services"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect linkding",
+        "fr": "Connecter linkding",
+        "de": "linkding verbinden",
+        "es": "Conectar linkding"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Enter the address of your linkding server (port 9090 by default) and an API token: in linkding, open Settings → Integrations and create one. The integration reads your counters and newest bookmarks, and can save the links your scenes send it.",
+        "fr": "Saisissez l'adresse de votre serveur linkding (port 9090 par défaut) et un jeton d'API : dans linkding, ouvrez Settings → Integrations et créez-en un. L'intégration lit vos compteurs et vos derniers favoris, et peut enregistrer les liens que vos scènes lui envoient.",
+        "de": "Gib die Adresse deines linkding-Servers (standardmäßig Port 9090) und ein API-Token ein: Öffne in linkding Settings → Integrations und erstelle eines. Die Integration liest deine Zähler und neuesten Lesezeichen und kann die Links speichern, die deine Szenen ihr schicken.",
+        "es": "Introduzca la dirección de su servidor linkding (puerto 9090 por defecto) y un token de API: en linkding, abra Settings → Integrations y cree uno. La integración lee sus contadores y sus últimos marcadores, y puede guardar los enlaces que le envían sus escenas."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://linkding.link/api/",
+          "label": {
+            "en": "linkding REST API",
+            "fr": "API REST de linkding",
+            "de": "linkding-REST-API",
+            "es": "API REST de linkding"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "linkding address",
+        "fr": "Adresse de linkding",
+        "de": "linkding-Adresse",
+        "es": "Dirección de linkding"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50:9090",
+        "fr": "ex. 192.168.1.50:9090",
+        "de": "z. B. 192.168.1.50:9090",
+        "es": "p. ej. 192.168.1.50:9090"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "api_token",
+      "type": "secret",
+      "label": {
+        "en": "API token",
+        "fr": "Jeton d'API",
+        "de": "API-Token",
+        "es": "Token de API"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "linkding → Settings → Integrations → REST API: create a token.",
+        "fr": "linkding → Settings → Integrations → REST API : créez un jeton.",
+        "de": "linkding → Settings → Integrations → REST API: Erstelle ein Token.",
+        "es": "linkding → Settings → Integrations → REST API: cree un token."
+      },
+      "required": true
     },
     {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "key": "filters",
+      "type": "section",
+      "label": {
+        "en": "Filters (optional)",
+        "fr": "Filtres (facultatif)",
+        "de": "Filter (optional)",
+        "es": "Filtros (opcional)"
+      },
+      "description": {
+        "en": "Counters, list, new bookmark trigger and scene reading only take the bookmarks matching these filters into account. Leave empty for all bookmarks.",
+        "fr": "Compteurs, liste, déclencheur « Nouveau favori » et lecture par scène ne tiennent compte que des favoris qui correspondent à ces filtres. Laissez vide pour tous les favoris.",
+        "de": "Zähler, Liste, Auslöser „Neues Lesezeichen“ und das Lesen per Szene berücksichtigen nur die Lesezeichen, die zu diesen Filtern passen. Leer lassen für alle Lesezeichen.",
+        "es": "Contadores, lista, disparador «Nuevo marcador» y lectura por escena solo tienen en cuenta los marcadores que coinciden con estos filtros. Déjelo vacío para todos los marcadores."
+      }
+    },
+    {
+      "key": "tag",
+      "type": "string",
+      "label": {
+        "en": "Tag",
+        "fr": "Étiquette",
+        "de": "Tag",
+        "es": "Etiqueta"
+      },
+      "placeholder": {
+        "en": "e.g. toread",
+        "fr": "ex. alire",
+        "de": "z. B. lesen",
+        "es": "p. ej. leer"
+      },
       "required": false,
-      "default": "celsius",
+      "default": "",
+      "description": {
+        "en": "One tag, without # nor spaces, as in linkding.",
+        "fr": "Une étiquette, sans # ni espace, comme dans linkding.",
+        "de": "Ein Tag, ohne # und ohne Leerzeichen, wie in linkding.",
+        "es": "Una etiqueta, sin # ni espacios, como en linkding."
+      }
+    },
+    {
+      "key": "search",
+      "type": "string",
+      "label": {
+        "en": "Search",
+        "fr": "Recherche",
+        "de": "Suche",
+        "es": "Búsqueda"
+      },
+      "description": {
+        "en": "Words searched as in linkding (title, description, address, notes).",
+        "fr": "Mots recherchés comme dans linkding (titre, description, adresse, notes).",
+        "de": "Wörter, gesucht wie in linkding (Titel, Beschreibung, Adresse, Notizen).",
+        "es": "Palabras buscadas como en linkding (título, descripción, dirección, notas)."
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "refresh_minutes",
+      "type": "select",
+      "label": {
+        "en": "Read linkding every",
+        "fr": "Lire linkding toutes les",
+        "de": "linkding lesen alle",
+        "es": "Leer linkding cada"
+      },
+      "description": {
+        "en": "New bookmarks are announced at the next read. Bookmarks saved from Gladys update the counters at once.",
+        "fr": "Les nouveaux favoris sont annoncés à la lecture suivante. Les favoris enregistrés depuis Gladys mettent les compteurs à jour aussitôt.",
+        "de": "Neue Lesezeichen werden beim nächsten Lesen gemeldet. Aus Gladys gespeicherte Lesezeichen aktualisieren die Zähler sofort.",
+        "es": "Los nuevos marcadores se anuncian en la siguiente lectura. Los marcadores guardados desde Gladys actualizan los contadores al instante."
+      },
+      "required": false,
+      "default": "15",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "5",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 minutes",
+            "fr": "60 minutes",
+            "de": "60 Minuten",
+            "es": "60 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "allow_add",
+      "type": "boolean",
+      "label": {
+        "en": "Allow scenes to add bookmarks",
+        "fr": "Autoriser les scènes à ajouter des favoris",
+        "de": "Szenen dürfen Lesezeichen hinzufügen",
+        "es": "Permitir que las escenas añadan marcadores"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Off by default: the \"Add a bookmark\" scene action is refused until you turn this on. A link already saved is never changed.",
+        "fr": "Désactivé par défaut : l'action de scène « Ajouter un favori » est refusée tant que vous ne l'activez pas. Un lien déjà enregistré n'est jamais modifié.",
+        "de": "Standardmäßig aus: Die Szenenaktion „Lesezeichen hinzufügen“ wird abgelehnt, bis du das einschaltest. Ein schon gespeicherter Link wird nie geändert.",
+        "es": "Desactivado por defecto: la acción de escena «Añadir un marcador» se rechaza hasta que lo active. Un enlace ya guardado nunca se modifica."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": false
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of names and messages",
+        "fr": "Langue des noms et messages",
+        "de": "Sprache der Namen und Meldungen",
+        "es": "Idioma de nombres y mensajes"
+      },
+      "description": {
+        "en": "Feature names are set when a device is added to Gladys.",
+        "fr": "Les noms des fonctionnalités sont fixés à l'ajout d'un appareil dans Gladys.",
+        "de": "Die Namen der Funktionen werden beim Hinzufügen eines Geräts zu Gladys festgelegt.",
+        "es": "Los nombres de las funciones se fijan al añadir un dispositivo a Gladys."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
-      "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+      "key": "bookmark_added",
+      "label": {
+        "en": "New bookmark",
+        "fr": "Nouveau favori",
+        "de": "Neues Lesezeichen",
+        "es": "Nuevo marcador"
       },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
-        }
-      ],
+      "description": {
+        "en": "A bookmark matching the filters of the configuration is added to linkding (imports and those saved by this integration excepted).",
+        "fr": "Un favori correspondant aux filtres de la configuration est ajouté à linkding (hors imports et favoris ajoutés par cette intégration).",
+        "de": "Ein Lesezeichen, das zu den Filtern der Konfiguration passt, wird zu linkding hinzugefügt (außer Importen und Lesezeichen dieser Integration).",
+        "es": "Se añade a linkding un marcador que coincide con los filtros de la configuración (salvo importaciones y marcadores de esta integración)."
+      },
       "variables": [
         {
-          "key": "target",
+          "key": "title",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Link",
+            "fr": "Lien",
+            "de": "Link",
+            "es": "Enlace"
+          }
+        },
+        {
+          "key": "description",
+          "type": "string",
+          "label": {
+            "en": "Description",
+            "fr": "Description",
+            "de": "Beschreibung",
+            "es": "Descripción"
+          }
+        },
+        {
+          "key": "tags",
+          "type": "string",
+          "label": {
+            "en": "Tags",
+            "fr": "Étiquettes",
+            "de": "Tags",
+            "es": "Etiquetas"
+          }
+        },
+        {
+          "key": "unread",
+          "type": "boolean",
+          "label": {
+            "en": "Unread",
+            "fr": "Non lu",
+            "de": "Ungelesen",
+            "es": "Sin leer"
+          }
+        },
+        {
+          "key": "bookmark_id",
+          "type": "number",
+          "label": {
+            "en": "Bookmark id",
+            "fr": "Identifiant du favori",
+            "de": "Lesezeichen-ID",
+            "es": "Id. del marcador"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "add_bookmark",
+      "label": {
+        "en": "Add a bookmark to linkding",
+        "fr": "Ajouter un favori à linkding",
+        "de": "Lesezeichen zu linkding hinzufügen",
+        "es": "Añadir un marcador a linkding"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Saves a web address, with tags and as unread if you want. Turn it on first in the configuration.",
+        "fr": "Enregistre une adresse web, avec des étiquettes et non lue si vous le souhaitez. À activer d'abord dans la configuration.",
+        "de": "Speichert eine Webadresse, auf Wunsch mit Tags und als ungelesen. Schalte es zuerst in der Konfiguration ein.",
+        "es": "Guarda una dirección web, con etiquetas y como no leída si lo desea. Actívelo primero en la configuración."
+      },
+      "timeout_seconds": 60,
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "key": "url",
+          "type": "string",
+          "required": true,
+          "label": {
+            "en": "Link",
+            "fr": "Lien",
+            "de": "Link",
+            "es": "Enlace"
+          },
+          "placeholder": {
+            "en": "https://…",
+            "fr": "https://…",
+            "de": "https://…",
+            "es": "https://…"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Title (optional)",
+            "fr": "Titre (facultatif)",
+            "de": "Titel (optional)",
+            "es": "Título (opcional)"
+          },
+          "description": {
+            "en": "Empty: the title of the page.",
+            "fr": "Vide : le titre de la page.",
+            "de": "Leer: der Titel der Seite.",
+            "es": "Vacío: el título de la página."
+          }
+        },
+        {
+          "key": "tags",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Tags (optional)",
+            "fr": "Étiquettes (facultatif)",
+            "de": "Tags (optional)",
+            "es": "Etiquetas (opcional)"
+          },
+          "placeholder": {
+            "en": "e.g. dinner italian",
+            "fr": "ex. dîner italien",
+            "de": "z. B. abendessen italienisch",
+            "es": "p. ej. cena italiana"
+          },
+          "description": {
+            "en": "Separated by spaces or commas; missing tags are created.",
+            "fr": "Séparées par des espaces ou des virgules ; les étiquettes absentes sont créées.",
+            "de": "Durch Leerzeichen oder Kommas getrennt; fehlende Tags werden angelegt.",
+            "es": "Separadas por espacios o comas; las etiquetas que faltan se crean."
+          }
+        },
+        {
+          "key": "unread",
+          "type": "boolean",
+          "required": false,
+          "label": {
+            "en": "Mark as unread (to read later)",
+            "fr": "Marquer comme non lu (à lire)",
+            "de": "Als ungelesen markieren (später lesen)",
+            "es": "Marcar como no leído (para leer)"
+          }
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "bookmark_id",
+          "type": "number",
+          "label": {
+            "en": "Bookmark id",
+            "fr": "Identifiant du favori",
+            "de": "Lesezeichen-ID",
+            "es": "Id. del marcador"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "already_saved",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Already saved",
+            "fr": "Déjà enregistré",
+            "de": "Schon gespeichert",
+            "es": "Ya guardado"
+          }
+        }
+      ]
+    },
+    {
+      "key": "read_latest",
+      "label": {
+        "en": "Read the latest linkding bookmarks",
+        "fr": "Lire les derniers favoris linkding",
+        "de": "Neueste linkding-Lesezeichen lesen",
+        "es": "Leer los últimos marcadores de linkding"
+      },
+      "description": {
+        "en": "Reads the newest bookmarks, unread ones or all, to send them in a message.",
+        "fr": "Lit les favoris les plus récents, non lus ou tous, pour les envoyer dans un message.",
+        "de": "Liest die neuesten Lesezeichen, ungelesene oder alle, um sie in einer Nachricht zu senden.",
+        "es": "Lee los marcadores más recientes, no leídos o todos, para enviarlos en un mensaje."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "list",
+          "type": "select",
+          "required": false,
+          "default": "unread",
+          "label": {
+            "en": "Bookmarks",
+            "fr": "Favoris",
+            "de": "Lesezeichen",
+            "es": "Marcadores"
+          },
+          "options": [
+            {
+              "value": "unread",
+              "label": {
+                "en": "Unread only",
+                "fr": "Non lus seulement",
+                "de": "Nur ungelesene",
+                "es": "Solo no leídos"
+              }
+            },
+            {
+              "value": "all",
+              "label": {
+                "en": "All",
+                "fr": "Tous",
+                "de": "Alle",
+                "es": "Todos"
+              }
+            }
+          ]
+        },
+        {
+          "key": "count",
+          "type": "select",
+          "required": false,
+          "default": "5",
+          "label": {
+            "en": "Number of bookmarks",
+            "fr": "Nombre de favoris",
+            "de": "Anzahl der Lesezeichen",
+            "es": "Número de marcadores"
+          },
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "en": "1",
+                "fr": "1",
+                "de": "1",
+                "es": "1"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "en": "3",
+                "fr": "3",
+                "de": "3",
+                "es": "3"
+              }
+            },
+            {
+              "value": "5",
+              "label": {
+                "en": "5",
+                "fr": "5",
+                "de": "5",
+                "es": "5"
+              }
+            },
+            {
+              "value": "10",
+              "label": {
+                "en": "10",
+                "fr": "10",
+                "de": "10",
+                "es": "10"
+              }
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Number of bookmarks read",
+            "fr": "Nombre de favoris lus",
+            "de": "Anzahl gelesener Lesezeichen",
+            "es": "Número de marcadores leídos"
+          }
+        },
+        {
+          "key": "bookmarks",
+          "type": "string",
+          "label": {
+            "en": "Bookmarks, one per line",
+            "fr": "Favoris, un par ligne",
+            "de": "Lesezeichen, eines pro Zeile",
+            "es": "Marcadores, uno por línea"
+          }
+        },
+        {
+          "key": "latest_title",
+          "type": "string",
+          "label": {
+            "en": "Title of the newest bookmark",
+            "fr": "Titre du favori le plus récent",
+            "de": "Titel des neuesten Lesezeichens",
+            "es": "Título del marcador más reciente"
+          }
+        },
+        {
+          "key": "latest_url",
+          "type": "string",
+          "label": {
+            "en": "Address of the newest bookmark",
+            "fr": "Adresse du favori le plus récent",
+            "de": "Adresse des neuesten Lesezeichens",
+            "es": "Dirección del marcador más reciente"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "bookmarks",
+      "label": {
+        "en": "linkding",
+        "fr": "linkding",
+        "de": "linkding",
+        "es": "linkding"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Unread bookmarks and counters.",
+        "fr": "Favoris non lus et compteurs.",
+        "de": "Ungelesene Lesezeichen und Zähler.",
+        "es": "Marcadores no leídos y contadores."
+      },
+      "icon": "bookmark",
+      "settings": [
+        {
+          "key": "list",
+          "type": "select",
+          "required": false,
+          "default": "unread",
+          "label": {
+            "en": "List",
+            "fr": "Liste",
+            "de": "Liste",
+            "es": "Lista"
+          },
+          "options": [
+            {
+              "value": "unread",
+              "label": {
+                "en": "Unread bookmarks",
+                "fr": "Favoris non lus",
+                "de": "Ungelesene Lesezeichen",
+                "es": "Marcadores no leídos"
+              }
+            },
+            {
+              "value": "all",
+              "label": {
+                "en": "Newest bookmarks",
+                "fr": "Derniers favoris",
+                "de": "Neueste Lesezeichen",
+                "es": "Últimos marcadores"
+              }
+            }
+          ]
+        },
+        {
+          "key": "show_counters",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "label": {
+            "en": "Show the counters",
+            "fr": "Afficher les compteurs",
+            "de": "Zähler anzeigen",
+            "es": "Mostrar los contadores"
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,41 +1,31 @@
 // -----------------------------------------------------------------------------
-// Scene actions (SDK v0.14+, Gladys 5.1+).
-//
-// A scene action is an OPERATION a scene author places in a scene, with
-// parameters and a result: "identify this device", "take a snapshot", "clean
-// these rooms". Each one is declared in the manifest `scene_actions` field
-// (key, label, `fields` in the config_schema grammar, scalar `outputs`) and
-// handled here, keyed by that same `key`; index.js registers every entry with
-// `gladys.onSceneAction(key, ...)`.
-//
-// Scene TRIGGERS are the other direction ("this happened"): they are fired by
-// the device that observes the event, see src/devices/motionSensor.js.
-//
-// The rules that matter:
-//   - `fields` arrive RESOLVED: scene variables substituted, defaults applied,
-//     validated by the core; a `"source": "devices"` field is the chosen
-//     device external_id;
-//   - resolve an object of the declared `outputs` (scalars only), readable by
-//     the following actions of the scene, or `undefined` for none. Keys not
-//     declared in the manifest are dropped by the core;
-//   - throwing fails THIS action only: the scene logs it and continues. A
-//     scene action is never a condition: return an output and let the scene
-//     author gate on it;
-//   - never fire a scene event as a consequence of a received action: a scene
-//     bound to that event would loop through the integration.
+// Scene actions (manifest `scene_actions`): save a bookmark in linkding — the
+// link of a camera clip, a page sent from a voice scene — (off unless the
+// configuration allows it), and read the newest bookmarks, to send them in a
+// message or speak them.
 // -----------------------------------------------------------------------------
 
-import { createLogger } from '@gladysassistant/integration-sdk';
-import { signalDevice } from './devices/index.js';
-
-const logger = createLogger({ name: 'scenes' });
+// The text output of "Read the latest bookmarks": one line per bookmark.
+export const lines = (bookmarks) =>
+  bookmarks.map((b) => (b.url && b.url !== b.title ? `${b.title} — ${b.url}` : b.title));
 
 export const SCENE_ACTIONS = {
-  // The ack is awaited under the action's `timeout_seconds` (15 s in the
-  // manifest), counted from the moment the scene reaches the action.
-  async identify_device(gladys, { fields, config }) {
-    logger.info(`Scene action identify_device <- ${fields.device}`);
-    const signalled = await signalDevice(gladys, fields.device, config);
-    return { signalled };
+  async add_bookmark(hub, { fields = {} }) {
+    const saved = await hub.save({
+      url: fields.url,
+      title: fields.title,
+      tags: fields.tags,
+      unread: fields.unread,
+    });
+    return { bookmark_id: saved.id, title: saved.title, already_saved: saved.existed };
+  },
+  async read_latest(hub, { fields = {} }) {
+    const bookmarks = await hub.readLatest({ list: fields.list, count: fields.count });
+    return {
+      count: bookmarks.length,
+      bookmarks: lines(bookmarks).join('\n').slice(0, 10_000),
+      latest_title: bookmarks[0]?.title ?? '',
+      latest_url: bookmarks[0]?.url ?? '',
+    };
   },
 };

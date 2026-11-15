@@ -1,67 +1,142 @@
-# Template de démonstration
+# linkding
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Reliez Gladys à [linkding](https://linkding.link), le gestionnaire de favoris
+auto-hébergé : suivez vos compteurs (favoris, non lus, archivés), voyez vos
+favoris non lus sur le tableau de bord, réagissez quand un favori est ajouté,
+lisez les plus récents dans un message et, si vous l'autorisez, enregistrez
+des liens depuis vos scènes. Tout reste sur votre réseau local : Gladys parle
+directement à votre serveur linkding.
 
-## Ce que vous obtenez
+Testé contre un vrai serveur linkding 1.47.0 (l'image Docker officielle). Vos
+retours sont les bienvenus sur le forum de Gladys.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Prérequis
+
+- Gladys Assistant 5.1 ou plus.
+- linkding, joignable depuis la machine de Gladys, sur le port 9090 par
+  défaut, ou derrière un proxy inverse.
+- Un jeton d'API : dans linkding, ouvrez **Settings → Integrations** et créez
+  un jeton dans la section **REST API**. L'intégration voit les favoris de
+  l'utilisateur propriétaire du jeton.
 
 ## Configuration
 
 1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+2. Dans **Adresse de linkding**, saisissez l'adresse IP du serveur, par
+   exemple `192.168.1.50` : l'intégration utilise alors le port 9090. Ajoutez
+   un port si le vôtre diffère (`192.168.1.50:9091`). Derrière un proxy
+   inverse, saisissez l'adresse complète (`https://liens.example.org`, avec
+   son chemin si linkding est servi sous un chemin).
+3. Collez le **Jeton d'API**.
+4. **Filtres (facultatif)** : une **Étiquette** (`alire`) et/ou une
+   **Recherche** (des mots, comme dans le champ de recherche de linkding). Les
+   compteurs, le widget, le déclencheur **Nouveau favori** et **Lire les
+   derniers favoris linkding** ne tiennent alors compte que des favoris qui
+   correspondent. Laissez les deux vides pour tous les favoris.
+5. **Lire linkding toutes les** : 5, 15 (par défaut), 30 ou 60 minutes.
+6. **Autoriser les scènes à ajouter des favoris** : désactivé par défaut.
+   Activez-le pour utiliser l'action de scène **Ajouter un favori à
+   linkding**.
+7. **Langue des noms et messages** fixe les noms des fonctionnalités (figés à
+   l'ajout de l'appareil) et les textes de l'intégration. Français par défaut.
+8. Enregistrez, puis utilisez **Tester la connexion** : elle affiche la
+   version de linkding et le nombre de favoris.
+9. Dans l'onglet **Découverte**, ajoutez l'appareil **linkding**.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+## Appareils
 
-## Actions
+**linkding** (un appareil) :
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+| Fonctionnalité      | Valeur                                                  |
+| ------------------- | ------------------------------------------------------- |
+| Serveur joignable   | 1 quand linkding répond, 0 sinon                        |
+| Favoris             | nombre de favoris, hors favoris archivés                |
+| Favoris non lus     | nombre de favoris marqués non lus                       |
+| Favoris archivés    | nombre de favoris archivés                              |
+| Dernier favori      | titre du favori le plus récent (son domaine sans titre) |
+| Version de linkding | version du serveur, par exemple 1.47.0                  |
 
-## Scènes
+Les filtres de la configuration s'appliquent aux trois compteurs et au dernier
+favori. Les compteurs gardent leur historique : un graphique montre comment
+votre pile de lecture grandit. Quand linkding ne répond pas, **Serveur
+joignable** passe à 0 et les compteurs gardent leur dernière valeur.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+## Widget du tableau de bord
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+**linkding** : deux tuiles (non lus, favoris) et les six favoris non lus les
+plus récents, avec leur domaine, leur date et leurs étiquettes. Touchez un
+favori pour lire sa description et l'ouvrir (liens https seulement). Dans les
+réglages du widget, **Liste** affiche plutôt les derniers favoris (les non lus
+portent alors un badge **Non lu**), et **Afficher les compteurs** masque les
+deux tuiles.
 
-## Tableau de bord
+## Déclencheurs de scène
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+**Nouveau favori** : un favori correspondant aux filtres de la configuration
+est ajouté à linkding, depuis l'application web, l'extension du navigateur ou
+l'API. Les imports (dont les favoris gardent leurs anciennes dates) et les
+favoris ajoutés par cette intégration ne sont pas annoncés.
+
+Variables : **Titre**, **Lien**, **Description**, **Étiquettes** (séparées par
+des virgules), **Non lu** et **Identifiant du favori**.
+
+La première lecture après l'installation est silencieuse : les favoris déjà
+présents ne sont pas annoncés. Dix événements au plus partent par lecture ; le
+reste est compté comme vu.
+
+## Actions de scène
+
+- **Ajouter un favori à linkding** (activez d'abord **Autoriser les scènes à
+  ajouter des favoris**) : **Lien** (obligatoire) et, si vous le souhaitez,
+  **Titre** (vide : linkding lit le titre de la page), **Étiquettes**
+  (séparées par des espaces ou des virgules ; les étiquettes absentes sont
+  créées) et **Marquer comme non lu**. Un lien déjà présent dans linkding est
+  laissé tel quel (linkding remplacerait sinon son titre et ses étiquettes).
+  Renvoie **Identifiant du favori**, **Titre** et **Déjà enregistré**.
+- **Lire les derniers favoris linkding** : **Favoris** (non lus seulement, par
+  défaut, ou tous) et **Nombre de favoris** (1, 3, 5 ou 10). Renvoie **Nombre
+  de favoris lus**, **Favoris, un par ligne** (`titre — adresse`), **Titre du
+  favori le plus récent** et **Adresse du favori le plus récent**.
+
+## Exemples de scènes
+
+- **Nouvelle lecture sur le téléphone** : déclencheur **Nouveau favori** →
+  envoyer un message « À lire : {{triggerEvent.data.title}}
+  {{triggerEvent.data.url}} ».
+- **Lecture du dimanche** : chaque dimanche à 10 h → **Lire les derniers
+  favoris linkding**, non lus seulement, 5 favoris → envoyer un message avec
+  la sortie **Favoris, un par ligne**.
+- **Garder le clip de la caméra** : quand une autre intégration donne
+  l'adresse d'un clip → **Ajouter un favori à linkding** avec cette adresse,
+  étiquette `sonnette`.
+- **Pile de lecture** : chaque soir → continuer seulement si **Favoris non
+  lus** dépasse 30 → envoyer un message « Votre pile de lecture dépasse 30
+  favoris ».
+- **Serveur arrêté** : **Serveur joignable** passe à 0 → envoyer un message.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« linkding a refusé le jeton d'API »** : le jeton a été supprimé ou mal
+  saisi. Créez-en un nouveau dans linkding → Settings → Integrations.
+- **« linkding ne répond pas »** : vérifiez l'adresse et le port depuis la
+  machine de Gladys. Le conteneur est sur un réseau en pont : `localhost` est
+  le conteneur lui-même, saisissez plutôt l'adresse IP du serveur.
+- **« Cette adresse ne répond pas comme linkding »** : une page de connexion
+  du proxy répond à la place de linkding, ou le chemin est faux. Saisissez
+  l'adresse de linkding lui-même.
+- **« L'ajout de favoris par les scènes est désactivé »** : activez
+  **Autoriser les scènes à ajouter des favoris** dans la configuration.
+- Pour plus de détails dans les journaux de l'intégration, réglez
+  `LOG_LEVEL=debug`.
+
+## Limites
+
+- Un seul utilisateur linkding : le propriétaire du jeton.
+- Le déclencheur part à la lecture suivante (15 minutes par défaut), pas
+  instantanément : linkding ne pousse rien. Il lit les 50 favoris les plus
+  récents : au-delà de 50 ajouts entre deux lectures, les plus anciens ne sont
+  pas annoncés.
+- Un favori ajouté directement archivé est compté mais pas annoncé.
+- L'intégration ne supprime, ne modifie et n'archive jamais rien dans
+  linkding.
+- Sans lien avec le projet linkding.
