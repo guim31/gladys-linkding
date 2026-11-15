@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "widget"  # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every SDK handler on the hub (shared with the tests)
+src/hub.js                        the link to linkding: timer, device, states, trigger, status, saves
+src/devices.js                    the linkding device and its states
+src/linkding/client.js            REST API (token), errors by kind
+src/linkding/model.js             bookmarks -> plain values; tags and links typed by users
+src/store.js                      /data/linkding-state.json: the highest bookmark id the trigger saw
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget (manifest `widgets`)
+src/texts.js                      every text produced by the container, in four languages
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, SDK fake Gladys + fake linkding (test/helpers/)
+test/fixtures/linkding/1.47.0/    bodies recorded on a real linkding 1.47.0
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,10 +75,39 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, widget content, feature names, and
+  `docs/{en,fr,de,es}.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
+
+## linkding
+
+- **REST API with a token** (`Authorization: Token <key>`, `Bearer` accepted
+  too), created in Settings → Integrations → REST API (several tokens per user
+  since 1.4x, model `ApiToken`). Scripting a test server:
+  `LD_SUPERUSER_NAME`/`LD_SUPERUSER_PASSWORD`, then
+  `ApiToken.objects.create(user=…, name=…)` in `python manage.py shell`.
+- Lists are `{ count, next, previous, results }`, `limit`/`offset`, newest
+  first (`sort=added_desc`, the default without user preferences); `count` is
+  the total of the query. `q` takes the web search syntax (`#tag`,
+  `!unread`). `/api/bookmarks/` leaves archived bookmarks out;
+  `/api/bookmarks/archived/` lists them.
+- `/api/user/profile/` carries `version`; `/health` too, without a token.
+- Errors: 401 `{ detail: "Invalid token." }`, 400 `{ url: ["Enter a valid
+URL."] }`, unknown route: HTML 404.
+- **`POST /api/bookmarks/` with a URL already saved overwrites that bookmark**
+  (title, tags, unread replaced, same id, answer 201): the integration asks
+  `GET /api/bookmarks/check/?url=` first and leaves an existing one alone.
+  `check` also fetches the page metadata, so it can take a few seconds.
+- An empty `title` on creation: linkding reads the page title (scraping), unless
+  `?disable_scraping`.
+- Ids grow; imports (Netscape HTML) keep their old `date_added`: the trigger
+  ignores bookmarks older than a day, and the ones saved by the integration.
+- The device id is `linkding:server`, independent of the address: one
+  integration, one linkding.
+- Testing with Docker: `sissbruecker/linkding` (port 9090, SQLite, no other
+  service).
 
 ---
 

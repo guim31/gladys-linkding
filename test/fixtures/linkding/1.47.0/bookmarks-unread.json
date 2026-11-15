@@ -1,0 +1,29 @@
+{
+  "request": "GET /api/bookmarks/?limit=20&sort=added_desc&q=%21unread",
+  "status": 200,
+  "body": {
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+      {
+        "id": 1,
+        "url": "https://example.org/recipes/lasagna",
+        "title": "Lasagna recipe",
+        "description": "Classic",
+        "notes": "",
+        "web_archive_snapshot_url": "https://web.archive.org/web/20261115012121/https://example.org/recipes/lasagna",
+        "favicon_url": null,
+        "preview_image_url": null,
+        "is_archived": false,
+        "unread": true,
+        "shared": false,
+        "tag_names": ["cooking", "italian"],
+        "date_added": "2026-11-15T01:21:21.823916Z",
+        "date_modified": "2026-11-15T01:21:21.823929Z",
+        "website_title": null,
+        "website_description": null
+      }
+    ]
+  }
+}

@@ -1,45 +1,107 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
-//
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Integration configuration: defaults (they mirror the `default` values of the
+// manifest `config_schema`, see test/manifest.test.js) and normalization, so
+// the rest of the code never deals with strings, blanks or `undefined`.
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+// The port linkding listens on out of the box (its Docker image exposes 9090).
+export const DEFAULT_PORT = 9090;
+
+export const REFRESH_MINUTES = ['5', '15', '30', '60'];
+
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  url: '',
+  api_token: '',
+  tag: '',
+  search: '',
+  refresh_minutes: '15',
+  allow_add: false,
+  language: 'fr',
 };
 
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * Turn what the user typed into the base URL of linkding, without `/api`:
+ * - `192.0.2.10` or `linkding.local` (no scheme, no port): port 9090;
+ * - `192.0.2.10:9091`: that port;
+ * - `https://example.org/linkding/`: exactly that address (reverse proxy,
+ *   LD_CONTEXT_PATH).
+ * A pasted `/api` or `/bookmarks` suffix is dropped. Null when not usable.
+ * @param {unknown} raw
+ * @returns {string | null}
+ */
+export function normalizeUrl(raw) {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  const text = raw.trim();
+  if (text === '') {
+    return null;
+  }
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text);
+  let url;
+  try {
+    url = new URL(hasScheme ? text : `http://${text}`);
+  } catch {
+    return null;
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || url.hostname === '') {
+    return null;
+  }
+  if (url.username || url.password || url.search || url.hash) {
+    // Credentials in the URL would end up in logs and error messages.
+    return null;
+  }
+  if (!hasScheme && url.port === '') {
+    url.port = String(DEFAULT_PORT);
+  }
+  const path = url.pathname
+    .replace(/\/+$/, '')
+    .replace(/\/(api|bookmarks)$/i, '')
+    .replace(/\/+$/, '');
+  return `${url.protocol}//${url.host}${path}`;
+}
+
+const text = (value) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '');
+
+/**
+ * The linkding search query of the filters: `<search> #<tag>`. A tag never
+ * holds a space in linkding; a pasted `#` is dropped.
+ */
+export function filterQuery({ tag, search }) {
+  const parts = [];
+  if (search) {
+    parts.push(search);
+  }
+  if (tag) {
+    parts.push(`#${tag}`);
+  }
+  return parts.join(' ');
+}
+
+/**
+ * @param {Record<string, unknown>} raw the configuration returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const typed = text(source.url);
+  const url = normalizeUrl(typed);
+  const refresh = String(source.refresh_minutes ?? '');
+  const tag = text(source.tag).replace(/^#+/, '').split(' ')[0].slice(0, 64);
+  const search = text(source.search).slice(0, 200);
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    url,
+    urlInvalid: typed !== '' && url === null,
+    // A token pasted with its scheme ("Token 0123...") works as well.
+    token: text(source.api_token).replace(/^(token|bearer)\s+/i, ''),
+    tag,
+    search,
+    query: filterQuery({ tag, search }),
+    refreshMinutes: Number(
+      REFRESH_MINUTES.includes(refresh) ? refresh : DEFAULT_CONFIG.refresh_minutes,
+    ),
+    allowAdd: source.allow_add === true || source.allow_add === 'true',
+    language: LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language,
   };
 }

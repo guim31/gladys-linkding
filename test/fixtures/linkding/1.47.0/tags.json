@@ -1,0 +1,31 @@
+{
+  "request": "GET /api/tags/",
+  "status": 200,
+  "body": {
+    "count": 4,
+    "next": null,
+    "previous": null,
+    "results": [
+      {
+        "id": 1,
+        "name": "cooking",
+        "date_added": "2026-11-15T01:21:22.778499Z"
+      },
+      {
+        "id": 2,
+        "name": "italian",
+        "date_added": "2026-11-15T01:21:23.281233Z"
+      },
+      {
+        "id": 3,
+        "name": "news",
+        "date_added": "2026-11-15T01:21:42.817031Z"
+      },
+      {
+        "id": 4,
+        "name": "x",
+        "date_added": "2026-11-15T01:21:51.263840Z"
+      }
+    ]
+  }
+}

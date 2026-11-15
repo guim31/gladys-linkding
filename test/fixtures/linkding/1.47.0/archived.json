@@ -1,0 +1,29 @@
+{
+  "request": "GET /api/bookmarks/archived/?limit=1",
+  "status": 200,
+  "body": {
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+      {
+        "id": 3,
+        "url": "https://example.net/old",
+        "title": "Old page",
+        "description": "",
+        "notes": "",
+        "web_archive_snapshot_url": "https://web.archive.org/web/20261115012146/https://example.net/old",
+        "favicon_url": null,
+        "preview_image_url": null,
+        "is_archived": true,
+        "unread": false,
+        "shared": false,
+        "tag_names": [],
+        "date_added": "2026-11-15T01:21:46.583707Z",
+        "date_modified": "2026-11-15T01:21:46.583713Z",
+        "website_title": null,
+        "website_description": null
+      }
+    ]
+  }
+}
